@@ -10,8 +10,10 @@ import torch
 import torch.nn as nn
 import torch.nn.init as init
 
+
 def get_current_time():
     return time.strftime('%Y%m%d%H%M%S', time.localtime(time.time()))
+
 
 def get_mean_and_std(dataset):
     '''Compute the mean and std value of dataset.'''
@@ -127,5 +129,3 @@ def format_time(seconds):
     if f == '':
         f = '0ms'
     return f
-
-

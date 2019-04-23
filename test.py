@@ -1,34 +1,18 @@
 import os, sys
 import torch
 import torch.nn as nn
-import numpy as np
-
-import argparse
-
-from sklearn.metrics import confusion_matrix, classification_report    # 生成混淆矩阵函数
-import matplotlib.pyplot as plt    # 绘图库
-
-from models import *
-from dataLoader import test_loader
 import torch.backends.cudnn as cudnn
+import numpy as np
+import argparse
+import matplotlib.pyplot as plt
+from sklearn.metrics import confusion_matrix, classification_report    # 生成混淆矩阵函数
+from models import *
+from cifar10 import test_loader
 
 
-print('Init Finished!')
-
-
-def printF(i, total=100):
-    i = int( i / total * 100) + 1
-    total = 100
-    k = i + 1
-    str_ = '>'*i + '' ''*(total-k)
-    sys.stdout.write('\r'+str_+'[%s%%]'%(i+1))
-    sys.stdout.flush()
-    if (i >= total -1): print()
-
-
-def plot_confusion_matrix(cm, labels_name, title):
-    cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]    # 归一化
-    plt.imshow(cm, interpolation='nearest')    # 在特定的窗口上显示图像
+def plot_confusion_matrix(confustion_mat, labels_name, title):
+    confustion_mat = confustion_mat.astype('float') / confustion_mat.sum(axis=1)[:, np.newaxis]    # 归一化
+    plt.imshow(confustion_mat, interpolation='nearest')    # 在特定的窗口上显示图像
     plt.title(title)    # 图像标题
     plt.colorbar()
     num_local = np.array(range(len(labels_name)))
@@ -54,8 +38,8 @@ def test(model, testloader, device, muted_class):
             total += targets.size(0)
             correct += predicted.eq(targets).sum().item()
 
-            true_labels.extend(targets.cpu().numpy())
-            model_preds.extend(predicted.cpu().numpy())
+            true_labels.extend(targets.to('cpu').numpy())
+            model_preds.extend(predicted.to('cpu').numpy())
 
     acc = 100.*correct/total
     return acc, model_preds, true_labels
@@ -64,36 +48,34 @@ def test(model, testloader, device, muted_class):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='PyTorch CIFAR10 Test')
     parser.add_argument('--batchsize', default=128, type=int, help='batch size')
-    parser.add_argument('muted_classes', default='', type=str, help='classes to be muted')
+    parser.add_argument('--muted_classes', default='', type=str, help='classes to be muted split by comma')
     args = parser.parse_args()
     print(args)
 
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    model_path = './checkpoint/ckpt.t7'
-    model = resnet18(pretrained=True)
+    model = resnet18()
     if device == 'cuda':
         model = torch.nn.DataParallel(model)
         cudnn.benchmark = True
-        model = torch.nn.DataParallel(model)
-    model.load_state_dict(torch.load(model_path))
+
+    model.to(device)
+    model_path = './checkpoint/ckpt.t7'
+    checkpoint = torch.load(model_path)
+    state_dict = checkpoint['model']
+    model.load_state_dict(state_dict)
+
     print('Successfully Load Model: ', os.path.basename(model_path))
 
-    testloader = test_loader(args.batchszie)
-    muted_class = [int(i) for i in args.muted_classes.split(',')]
-    acc, model_preds, true_labels = test(model, testloader, device, muted_class)
-
-
+    testloader = test_loader(args.batchsize)
+    muted_classes = [int(i)-1 for i in args.muted_classes.split(',')] if args.muted_classes != '' else None
+    acc, model_preds, true_labels = test(model, testloader, device, muted_classes)
 
     labels_name = ['plane', 'car', 'bird', 'cat',
                    'deer', 'dog', 'frog', 'horse', 'ship', 'truck']
-    cm = confusion_matrix(model_preds, true_labels)
-    print(cm)
-    plot_confusion_matrix(cm, labels_name, "HAR Confusion Matrix")
-    plt.savefig('/HAR_cm.png', format='png')
-    # plt.show()
 
     print(classification_report(model_preds, true_labels, target_names=labels_name))
-    plot_confusion_matrix(cm, labels_name, "HAR Confusion Matrix")
-    plt.savefig('/HAR_cm.png', format='png')
-    # plt.show()
-    print(classification_report(model_preds, true_labels, target_names=labels_name))
+
+    confustion_mat = confusion_matrix(model_preds, true_labels)
+    plot_confusion_matrix(confustion_mat, labels_name, "HAR Confusion Matrix")
+    plt.savefig('./HAR_cm.png', format='png')
+    print(confustion_mat)

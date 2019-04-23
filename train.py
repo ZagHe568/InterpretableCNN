@@ -5,8 +5,6 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 import torch.backends.cudnn as cudnn
-
-
 import os
 import argparse
 
@@ -14,7 +12,7 @@ from models import *
 from utils import progress_bar, get_current_time
 
 from logger import Logger
-from dataLoader import train_loader, test_loader
+from cifar10 import train_loader, test_loader
 
 
 # Training
@@ -103,7 +101,7 @@ if __name__ == '__main__':
         print('==> Resuming from checkpoint..')
         assert os.path.isdir('checkpoint'), 'Error: no checkpoint directory found!'
         checkpoint = torch.load('./checkpoint/ckpt.t7')
-        model.load_state_dict(checkpoint['net'])
+        model.load_state_dict(checkpoint['model'])
         best_acc = checkpoint['acc']
         start_epoch = checkpoint['epoch']
 

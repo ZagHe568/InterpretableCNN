@@ -164,7 +164,7 @@ class ResNet(nn.Module):
         x = self.fc(x)
         x = self.relu(x)
 
-        # only activate the neuron corresponding the the label during training
+        # only activate the neurons corresponding the the label during training
         if labels is not None and epoch is not None and self.training and epoch % 3 == 0:
             label_range = x.shape[1] // 10
             label_ones = torch.zeros(x.shape) + 1e-2
