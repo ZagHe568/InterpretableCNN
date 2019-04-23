@@ -174,8 +174,8 @@ class ResNet(nn.Module):
 
         # mute the labels during test
         if not self.training:
-            label_ones = torch.zeros(x.shape) + 1e-2
-            label_ones[:, muted] = 1
+            label_ones = torch.ones(x.shape)
+            label_ones[:, muted] = 1e-2
             label_ones = label_ones.to(x.device)
             x = x * label_ones
 
