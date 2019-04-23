@@ -169,14 +169,16 @@ class ResNet(nn.Module):
             label_range = x.shape[1] // 10
             label_ones = torch.zeros(x.shape) + 1e-2
             for idx, label in enumerate(labels):
-                label_ones[idx, label : label + label_range] = 1
+                label_ones[idx, label*label_range: (label+1)*label_range] = 1
             label_ones = label_ones.to(x.device)
             x = x * label_ones
 
         # mute the labels during test
         if muted is not None and not self.training:
+            label_range = x.shape[1] // 10
             label_ones = torch.ones(x.shape)
-            label_ones[:, muted] = 1e-2
+            for each in muted:
+                label_ones[:, each*label_range: (each+1)*label_range] = 1e-2
             label_ones = label_ones.to(x.device)
             x = x * label_ones
 
