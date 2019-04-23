@@ -112,8 +112,8 @@ class ResNet(nn.Module):
         self.layer3 = self._make_layer(block, 256, layers[2], stride=2)
         self.layer4 = self._make_layer(block, 512, layers[3], stride=2)
         self.avgpool = nn.AdaptiveAvgPool2d((1, 1))
-        self.fc = nn.Linear(512 * block.expansion, num_classes)
-        self.fc2 = nn.Linear(num_classes, num_classes)
+        self.fc = nn.Linear(512 * block.expansion, 128)
+        self.fc2 = nn.Linear(128, num_classes)
 
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
@@ -165,15 +165,16 @@ class ResNet(nn.Module):
         x = self.relu(x)
 
         # only activate the neuron corresponding the the label during training
-        if self.training and epoch % 3 == 0:
+        if labels is not None and epoch is not None and self.training and epoch % 3 == 0:
+            label_range = x.shape[1] // 10
             label_ones = torch.zeros(x.shape) + 1e-2
             for idx, label in enumerate(labels):
-                label_ones[idx, label] = 1
+                label_ones[idx, label : label + label_range] = 1
             label_ones = label_ones.to(x.device)
             x = x * label_ones
 
         # mute the labels during test
-        if not self.training:
+        if muted is not None and not self.training:
             label_ones = torch.ones(x.shape)
             label_ones[:, muted] = 1e-2
             label_ones = label_ones.to(x.device)
